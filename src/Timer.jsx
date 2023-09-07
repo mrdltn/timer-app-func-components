@@ -1,4 +1,33 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useReducer } from 'react';
+
+const countReducer = (state, { type }) => {
+    if (type === 'START') {
+        return {
+            ...state,
+            isCounting: true,
+        };
+    }
+    if (type === 'STOP') {
+        return {
+            ...state,
+            isCounting: false,
+        };
+    }
+    if (type === 'RESET') {
+        return {
+            count: 0,
+            isCounting: false,
+        };
+    }
+    if (type === 'TICK-TACK') {
+        return {
+            ...state,
+            count: state.count + 1,
+        };
+    }
+
+    return state;
+};
 
 function setDefaultValue() {
     const userCount = localStorage.getItem('count');
@@ -6,21 +35,11 @@ function setDefaultValue() {
 }
 
 function TimerFunc() {
-    const [count, setCount] = useState(setDefaultValue());
-    const [isCounting, setIsCounting] = useState(false);
-    const timerIdRef = useRef(null);
+    const [{ count, isCounting }, dispatch] = useReducer(countReducer, {
+        count: setDefaultValue(),
+        isCounting: false,
+    });
     console.log('render');
-
-    const handleStart = () => {
-        setIsCounting(true);
-    };
-    const handleStop = () => {
-        setIsCounting(false);
-    };
-    const handleReset = () => {
-        setCount(0);
-        setIsCounting(false);
-    };
 
     useEffect(() => {
         console.log('update');
@@ -28,17 +47,18 @@ function TimerFunc() {
     }, [count]);
 
     useEffect(() => {
-        clearInterval(timerIdRef.current);
+        let timerId = null;
+        clearInterval(timerId);
         if (isCounting) {
-            timerIdRef.current = setInterval(() => {
-                setCount((prevCount) => prevCount + 1);
+            timerId = setInterval(() => {
+                dispatch({ type: 'TICK-TACK' });
             }, 1000);
         }
 
         return () => {
             console.log('unmount');
-            timerIdRef.current && clearInterval(timerIdRef.current);
-            timerIdRef.current = null;
+            timerId && clearInterval(timerId);
+            timerId = null;
         };
     }, [isCounting]);
 
@@ -47,11 +67,13 @@ function TimerFunc() {
             <h1>Timer-func.compon.React</h1>
             <h3>{count}</h3>
             {!isCounting ? (
-                <button onClick={handleStart}>Start</button>
+                <button onClick={() => dispatch({ type: 'START' })}>
+                    Start
+                </button>
             ) : (
-                <button onClick={handleStop}>Stop</button>
+                <button onClick={() => dispatch({ type: 'STOP' })}>Stop</button>
             )}
-            <button onClick={handleReset}>Reset</button>
+            <button onClick={() => dispatch({ type: 'RESET' })}>Reset</button>
         </div>
     );
 }
